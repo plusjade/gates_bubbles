@@ -59,7 +59,7 @@ BubbleChart = (function() {
     this.nodes = [];
     this.force = null;
     this.circles = null;
-    this.fill_color = d3.scale.ordinal().domain(["low", "medium", "high"]).range(["#d84b2a", "#beccae", "#7aa25c"]);
+    this.fill_color = d3.scale.ordinal().domain(["low", "medium", "high"]).range(["#5E2D79", "#beccae", "#7aa25c"]);
     max_amount = d3.max(this.data, function(d) {
       return parseInt(d.total_amount);
     });
@@ -145,7 +145,11 @@ BubbleChart = (function() {
 
   BubbleChart.prototype.display_by_year = function() {
     var _this = this;
-    this.force.gravity(this.layout_gravity).charge(this.charge).friction(0.9).on("tick", function(e) {
+    this.force
+      .gravity(this.layout_gravity)
+      .charge(this.charge)
+      .friction(0.9)
+      .on("tick", function(e) {
       return _this.circles.each(_this.move_towards_year(e.alpha)).attr("cx", function(d) {
         return d.x;
       }).attr("cy", function(d) {
@@ -154,6 +158,47 @@ BubbleChart = (function() {
     });
     this.force.start();
     return this.display_years();
+  };
+
+  BubbleChart.prototype.determine_n_cluster_points_for_key_values = function(n, key_values) {
+    var cluster_points = {};
+    var i;
+    for (i = 1; i<=n; i++) {
+      var key_value = key_values[i-1];
+      cluster_points[key_value] = {
+        x: this.width*(i/(n+1)),
+        y: this.height/2
+      };
+    }
+    return cluster_points;
+  };
+
+  BubbleChart.prototype.sort_into_n_sections_for_key_with_values = function(n, key, key_values) {
+    var _this = this;
+    var cluster_points = _this.determine_n_cluster_points_for_key_values(n, key_values);
+    this.force
+      .gravity(this.layout_gravity)
+      .charge(this.charge)
+      .friction(0.9)
+      .on("tick", function(e) {
+        return _this.circles.each(_this.move_towards_cluster_points(e.alpha, cluster_points, key, key_values))
+          .attr("cx", function(d) {
+            return d.x;
+          })
+          .attr("cy", function(d) {
+            return d.y;
+          });
+      });
+    this.force.start();
+  };
+
+  BubbleChart.prototype.move_towards_cluster_points = function(alpha, cluster_points, key, key_values) {
+    var _this = this;
+    return function(d) {
+      var cluster_point = cluster_points[d[key]];
+      d.x = d.x + (cluster_point.x - d.x) * (_this.damper + 0.02) * alpha * 1.1;
+      return d.y = d.y + (cluster_point.y - d.y) * (_this.damper + 0.02) * alpha * 1.1;
+    };
   };
 
   BubbleChart.prototype.move_towards_year = function(alpha) {
@@ -184,6 +229,7 @@ BubbleChart = (function() {
     });
   };
 
+
   BubbleChart.prototype.hide_years = function() {
     var years;
     return years = this.vis.selectAll(".years").remove();
@@ -213,8 +259,7 @@ BubbleChart = (function() {
 root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
 $(function() {
-  var chart, render_vis,
-    _this = this;
+  var chart, render_vis, _this = this;
   chart = null;
   render_vis = function(csv) {
     chart = new BubbleChart(csv);
@@ -225,7 +270,8 @@ $(function() {
     return chart.display_group_all();
   };
   root.display_year = function() {
-    return chart.display_by_year();
+    var years = ["2007", "2008", "2009", "2010"];
+    return chart.sort_into_n_sections_for_key_with_values(4, "year", years);
   };
   root.toggle_view = function(view_type) {
     if (view_type === 'year') {
