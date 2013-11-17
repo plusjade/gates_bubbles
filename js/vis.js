@@ -35,31 +35,13 @@ BubbleChart = (function() {
       x: this.width / 2,
       y: this.height / 2
     };
-    this.year_centers = {
-      "2007": {
-        x: this.width / 4,
-        y: this.height / 2
-      },
-      "2008": {
-        x: this.width / 4,
-        y: this.height / 2
-      },
-      "2009": {
-        x: this.width / 4,
-        y: this.height / 2
-      },
-      "2010": {
-        x: 2 * this.width / 4,
-        y: this.height / 2
-      }
-    };
     this.layout_gravity = -0.01;
     this.damper = 0.1;
     this.vis = null;
     this.nodes = [];
     this.force = null;
     this.circles = null;
-    this.fill_color = d3.scale.ordinal().domain(["low", "medium", "high"]).range(["#5E2D79", "#beccae", "#7aa25c"]);
+    this.fill_color = d3.scale.ordinal().domain(["low", "medium", "high"]).range(["#6B238E", "#8A2BE2", "#BF5FFF"]);
     max_amount = d3.max(this.data, function(d) {
       return parseInt(d.total_amount);
     });
@@ -74,12 +56,8 @@ BubbleChart = (function() {
       var node;
       node = {
         id: d.id,
-        radius: _this.radius_scale(parseInt(d.total_amount)),
-        value: d.total_amount,
-        name: d.grant_title,
-        org: d.organization,
-        group: d.group,
-        year: d.start_year,
+        radius: 20,
+        department: d.department,
         x: Math.random() * 900,
         y: Math.random() * 800
       };
@@ -143,23 +121,6 @@ BubbleChart = (function() {
     };
   };
 
-  BubbleChart.prototype.display_by_year = function() {
-    var _this = this;
-    this.force
-      .gravity(this.layout_gravity)
-      .charge(this.charge)
-      .friction(0.9)
-      .on("tick", function(e) {
-      return _this.circles.each(_this.move_towards_year(e.alpha)).attr("cx", function(d) {
-        return d.x;
-      }).attr("cy", function(d) {
-        return d.y;
-      });
-    });
-    this.force.start();
-    return this.display_years();
-  };
-
   BubbleChart.prototype.determine_n_cluster_points_for_key_values = function(n, key_values) {
     var cluster_points = {};
     var i;
@@ -201,16 +162,6 @@ BubbleChart = (function() {
     };
   };
 
-  BubbleChart.prototype.move_towards_year = function(alpha) {
-    var _this = this;
-    return function(d) {
-      var target;
-      target = _this.year_centers[d.year];
-      d.x = d.x + (target.x - d.x) * (_this.damper + 0.02) * alpha * 1.1;
-      return d.y = d.y + (target.y - d.y) * (_this.damper + 0.02) * alpha * 1.1;
-    };
-  };
-
   BubbleChart.prototype.display_years = function() {
     var years, years_data, years_x,
       _this = this;
@@ -235,22 +186,22 @@ BubbleChart = (function() {
     return years = this.vis.selectAll(".years").remove();
   };
 
-  BubbleChart.prototype.show_details = function(data, i, element) {
-    var content;
-    d3.select(element).attr("stroke", "black");
-    content = "<span class=\"name\">Title:</span><span class=\"value\"> " + data.name + "</span><br/>";
-    content += "<span class=\"name\">Amount:</span><span class=\"value\"> $" + (addCommas(data.value)) + "</span><br/>";
-    content += "<span class=\"name\">Year:</span><span class=\"value\"> " + data.year + "</span>";
-    return this.tooltip.showTooltip(content, d3.event);
-  };
+  // BubbleChart.prototype.show_details = function(data, i, element) {
+  //   var content;
+  //   d3.select(element).attr("stroke", "black");
+  //   content = "<span class=\"name\">Title:</span><span class=\"value\"> " + data.name + "</span><br/>";
+  //   content += "<span class=\"name\">Amount:</span><span class=\"value\"> $" + (addCommas(data.value)) + "</span><br/>";
+  //   content += "<span class=\"name\">Year:</span><span class=\"value\"> " + data.year + "</span>";
+  //   return this.tooltip.showTooltip(content, d3.event);
+  // };
 
-  BubbleChart.prototype.hide_details = function(data, i, element) {
-    var _this = this;
-    d3.select(element).attr("stroke", function(d) {
-      return d3.rgb(_this.fill_color(d.group)).darker();
-    });
-    return this.tooltip.hideTooltip();
-  };
+  // BubbleChart.prototype.hide_details = function(data, i, element) {
+  //   var _this = this;
+  //   d3.select(element).attr("stroke", function(d) {
+  //     return d3.rgb(_this.fill_color(d.group)).darker();
+  //   });
+  //   return this.tooltip.hideTooltip();
+  // };
 
   return BubbleChart;
 
@@ -270,8 +221,10 @@ $(function() {
     return chart.display_group_all();
   };
   root.display_year = function() {
-    var years = ["2007", "2008", "2009", "2010"];
-    return chart.sort_into_n_sections_for_key_with_values(4, "year", years);
+    // var years = ["2007", "2008", "2009", "2010"];
+    // return chart.sort_into_n_sections_for_key_with_values(4, "year", years);
+    var departments = ["Engineering", "Sales"];
+    return chart.sort_into_n_sections_for_key_with_values(2, "department", departments);
   };
   root.toggle_view = function(view_type) {
     if (view_type === 'year') {
@@ -280,6 +233,6 @@ $(function() {
       return root.display_all();
     }
   };
-  return d3.csv("data/gates_money.csv", render_vis);
+  return d3.csv("data/dummy.csv", render_vis);
 });
 
